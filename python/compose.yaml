@@ -1,0 +1,11 @@
+services:
+  python-dev:
+    image: python:3.11
+    container_name: python-dev-container
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    attach: true
+    command: /bin/bash
