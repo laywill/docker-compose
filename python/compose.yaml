@@ -1,11 +1,30 @@
 services:
   python-dev:
-    image: python:3.11
     container_name: python-dev-container
+
+    # Use the official Python image from Docker Hub
+    image: python:3.11
+    
+    # Mount the current directory to /workspace in the container and set it as the working directory
+    # You can change this to any directory you want to work in
+    # e.g. another git repo you have cloned and want to run
     volumes:
       - .:/workspace
     working_dir: /workspace
+    
+    # Interactive shell as the main process
+    command: /bin/bash
     stdin_open: true
     tty: true
     attach: true
-    command: /bin/bash
+    
+    # Use a non-root user with UID and GID 1000, which is common for the first user on many systems
+    user: 1000:1000
+
+    # Best not to grant permissions you don't need
+    # Add more if you need them
+    cap_add:
+      - CHOWN 
+    cap_drop:
+      - ALL
+      
