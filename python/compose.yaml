@@ -1,3 +1,7 @@
+# Docker Compose configuration for Python development / REPL workspace
+
+version: '3.8'
+
 services:
   python-dev:
     container_name: python-dev-container
