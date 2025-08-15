@@ -1,0 +1,100 @@
+{
+  // Editor settings for all files
+  "editor.insertFinalNewline": true,
+  "editor.trimAutoWhitespace": true,
+  "files.trimFinalNewlines": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.eol": "\n",
+
+  // Markdown-specific settings
+  "[markdown]": {
+    "editor.wordWrap": "on",
+    "editor.quickSuggestions": {
+      // "comments": "off",
+      "strings": "off",
+      // "other": "off"
+    },
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.formatOnType": false,
+    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.markdownlint": "explicit"
+    },
+    "editor.rulers": [80, 100],
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+
+  // YAML settings (for Docker Compose files)
+  "[yaml]": {
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.autoIndent": "advanced",
+    "editor.quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": true
+    }
+  },
+
+  // JSON settings
+  "[json]": {
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+
+  // Dockerfile settings
+  "[dockerfile]": {
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+
+  // Markdownlint extension configuration
+  "markdownlint.config": {
+    "default": true,
+    "MD013": {
+      "line_length": 100,
+      "code_blocks": false,
+      "tables": false,
+      "headings": false
+    },
+    "MD033": false,
+    "MD041": false
+  },
+
+  // File associations
+  "files.associations": {
+    "*.env.example": "properties",
+    "compose.yaml": "yaml",
+    "compose.yml": "yaml",
+    "docker-compose.yaml": "yaml",
+    "docker-compose.yml": "yaml",
+    ".env": "properties"
+  },
+
+  // Git settings
+  "git.autofetch": true,
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+
+  // Explorer settings
+  "explorer.confirmDragAndDrop": false,
+  "explorer.confirmDelete": true,
+
+  // Search settings
+  "search.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true
+  },
+
+  // Terminal settings
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.defaultProfile.osx": "zsh"
+}
