@@ -14,12 +14,14 @@ cp .env.example .env
 ```
 
 **Minimum required configuration:**
+
 ```bash
 # The only required variable - no fallback provided
 WORKSPACE_PATH=/path/to/your/development/directory
 ```
 
 **Optional configuration with defaults:**
+
 ```bash
 PYTHON_VERSION=3.11          # Python version (default: 3.11)
 CONTAINER_NAME=python-dev    # Container name (default: python-dev-container)
@@ -74,6 +76,7 @@ exit                    # Exit container
 ### Python Versions
 
 Supported Python versions (configure via `PYTHON_VERSION`):
+
 - `3.8`, `3.9`, `3.10`, `3.11`, `3.12`, `3.13`
 - Slim variants: `3.11-slim`, `3.12-slim`
 - Alpine variants: `3.11-alpine`, `3.12-alpine`
@@ -98,11 +101,13 @@ For seamless Git operations, uncomment the git volume mounts in `compose.yaml`:
 ```
 
 This provides:
+
 - **Git configuration**: Your identity and settings
 - **Credentials**: Access to private repositories
 - **SSH keys**: Authentication for Git operations
 
 **SSH Key Permissions:**
+
 ```bash
 chmod 600 ~/.ssh/id_rsa
 chmod 700 ~/.ssh
@@ -130,6 +135,7 @@ The container includes only `CHOWN` by default. Uncomment additional capabilitie
 ## Common Workflows
 
 ### 1. Script Development
+
 ```bash
 # Start container with your project directory
 docker compose run --rm python-dev
@@ -140,6 +146,7 @@ python my_script.py
 ```
 
 ### 2. Package Experimentation
+
 ```bash
 # Start container
 docker compose run --rm python-dev
@@ -150,6 +157,7 @@ python -c "import pandas; print(pandas.__version__)"
 ```
 
 ### 3. Jupyter Notebooks
+
 ```bash
 # Install and run Jupyter inside container
 docker compose run --rm python-dev
@@ -160,6 +168,7 @@ jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root
 ```
 
 ### 4. Interactive Development
+
 ```bash
 # Long-running container for development session
 docker compose up -d python-dev
@@ -180,11 +189,13 @@ docker compose down
 ## Health Monitoring
 
 The container includes health checks that verify:
+
 - Python interpreter is accessible
 - Python version can be determined
 - Basic Python functionality works
 
 Check health status:
+
 ```bash
 docker compose ps
 ```
@@ -205,6 +216,7 @@ PGID=1001
 ## Troubleshooting
 
 ### Permission Issues
+
 ```bash
 # Ensure workspace is owned by your user
 sudo chown -R $USER:$USER /path/to/workspace
@@ -214,6 +226,7 @@ id
 ```
 
 ### Git Operations Fail
+
 ```bash
 # Ensure SSH key permissions
 chmod 600 ~/.ssh/id_rsa
@@ -224,7 +237,9 @@ ssh -T git@github.com
 ```
 
 ### Python Package Installation Issues
+
 Uncomment additional capabilities in `compose.yaml` if package installation fails:
+
 ```yaml
 cap_add:
   - CHOWN
@@ -233,7 +248,9 @@ cap_add:
 ```
 
 ### Memory/CPU Exhaustion
+
 Python processes can consume large amounts of resources. Adjust limits in `.env`:
+
 ```bash
 # For memory-intensive tasks (ML, data processing)
 MEMORY_LIMIT=12G
@@ -245,6 +262,7 @@ CPU_LIMIT=1.0
 ```
 
 Auto-detect your system limits:
+
 ```bash
 # Memory (80% of total)
 echo "MEMORY_LIMIT=$(($(grep MemTotal /proc/meminfo | awk '{print $2}') * 80 / 100 / 1024))M"
@@ -256,6 +274,7 @@ echo "CPU_LIMIT=$(echo "$(nproc) * 0.8" | bc)"
 ## Example Projects
 
 ### Data Analysis Setup
+
 ```bash
 # .env configuration
 WORKSPACE_PATH=/home/user/data-analysis
@@ -267,6 +286,7 @@ pip install pandas numpy matplotlib jupyter seaborn
 ```
 
 ### Web Development Setup  
+
 ```bash
 # .env configuration
 WORKSPACE_PATH=/home/user/web-projects
