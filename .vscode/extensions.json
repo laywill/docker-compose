@@ -19,6 +19,10 @@
     "ms-python.pylint",
     "ms-python.black-formatter",
     
+    // Ruby support (for the Ruby development environment)
+    "rebornix.ruby",
+    "wingrunr21.vscode-ruby",
+    
     // General productivity
     "editorconfig.editorconfig",
     "ms-vscode.vscode-json"
