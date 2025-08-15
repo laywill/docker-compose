@@ -1,0 +1,30 @@
+{
+  "recommendations": [
+    // Markdown support and linting
+    "davidanson.vscode-markdownlint",
+    "yzhang.markdown-all-in-one",
+    
+    // Docker and container support
+    "ms-azuretools.vscode-docker",
+    "ms-vscode-remote.remote-containers",
+    
+    // YAML support (for Docker Compose)
+    "redhat.vscode-yaml",
+    
+    // Git integration enhancements
+    "eamodio.gitlens",
+    
+    // Python support (for the Python development environment)
+    "ms-python.python",
+    "ms-python.pylint",
+    "ms-python.black-formatter",
+    
+    // General productivity
+    "editorconfig.editorconfig",
+    "ms-vscode.vscode-json"
+  ],
+  "unwantedRecommendations": [
+    // Extensions that might conflict or are redundant
+    "ms-vscode.vscode-markdown"
+  ]
+}
