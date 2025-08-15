@@ -6,7 +6,7 @@ A complete media management and download stack including Sonarr, Radarr, Lidarr,
 
 **🚨 Critical**: The `.env` file is MANDATORY - the stack will not work without it. There are no fallback paths in the compose file.
 
-## � Required Configuration
+## Required Configuration
 
 Before deploying, you **must** configure the following:
 
@@ -23,14 +23,14 @@ cp .env.example .env
 
 ```bash
 # VPN Configuration
-VPN_PROVIDER=nordvpn          # Examples: nordvpn, surfshark, expressvpn, protonvpn, pia, windscribe  
+VPN_PROVIDER=nordvpn          # Examples: nordvpn, surfshark, expressvpn, protonvpn, pia, windscribe
 VPN_TYPE=openvpn             # Options: openvpn, wireguard
 VPN_USERNAME=your_username    # Your VPN account username
 VPN_PASSWORD=your_password    # Your VPN account password
 
 # Path Configuration (customize these base paths)
 CONFIG_ROOT=/home/user/docker/configs    # Base path for all app configurations
-MEDIA_ROOT=/home/user/media              # Base path for media libraries  
+MEDIA_ROOT=/home/user/media              # Base path for media libraries
 DOWNLOADS_ROOT=/home/user/downloads      # Downloads directory
 
 # Timezone Configuration (recommended to match VPN exit location)
@@ -82,7 +82,7 @@ Ensure all directories are owned by UID/GID 1000:1000:
 ```bash
 # Using the path variables from your .env file
 sudo chown -R 1000:1000 ${CONFIG_ROOT}
-sudo chown -R 1000:1000 ${MEDIA_ROOT}  
+sudo chown -R 1000:1000 ${MEDIA_ROOT}
 sudo chown -R 1000:1000 ${DOWNLOADS_ROOT}
 
 # Example with actual paths:
@@ -218,7 +218,7 @@ QBITTORRENT_MEMORY_LIMIT=1G
 ### Core Media Management
 
 - **Sonarr**: TV show management and monitoring
-- **Radarr**: Movie management and monitoring  
+- **Radarr**: Movie management and monitoring
 - **Lidarr**: Music management and monitoring
 - **Prowlarr**: Indexer management for all *arr apps
 

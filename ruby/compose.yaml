@@ -1,0 +1,89 @@
+# Common configuration variables - customize in your .env file
+# WORKSPACE_PATH is REQUIRED - create .env file to set it
+x-common-variables: &common-variables
+  RUBY_VERSION: &ruby-version ${RUBY_VERSION:-3.1}
+  WORKSPACE_PATH: &workspace-path ${WORKSPACE_PATH:-.}
+  TZ: &timezone ${TZ:-UTC}
+
+services:
+  ruby-dev:
+    container_name: ${CONTAINER_NAME:-ruby-dev-container}
+
+    # Use the official Ruby image from Docker Hub
+    # Version configurable via RUBY_VERSION environment variable
+    image: ruby:${RUBY_VERSION:-3.1}
+
+    # Mount workspace and optional git/ssh configuration
+    volumes:
+      # Primary workspace directory (REQUIRED: set WORKSPACE_PATH in .env file)
+      - ${WORKSPACE_PATH:-.}:/workspace:rw
+
+      # Optional Git configuration (uncomment if needed)
+      # - ${HOME}/.gitconfig:/home/ruby/.gitconfig:ro
+      # - ${HOME}/.git-credentials:/home/ruby/.git-credentials:ro
+
+      # Optional SSH keys for Git operations (uncomment if needed)
+      # - ${HOME}/.ssh:/home/ruby/.ssh:ro
+
+    working_dir: /workspace
+
+    # Interactive shell as the main process
+    command: /bin/bash
+    stdin_open: true
+    tty: true
+
+    # Environment variables
+    environment:
+      - TZ=${TZ:-UTC}
+      # Ruby-specific environment variables
+      - BUNDLE_PATH=/usr/local/bundle
+      - BUNDLE_BIN=/usr/local/bundle/bin
+      - GEM_HOME=/usr/local/bundle
+      - PATH=/usr/local/bundle/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      # Disable documentation generation for faster gem installs
+      - BUNDLE_SILENCE_ROOT_WARNING=1
+
+    # Use a non-root user with configurable UID and GID
+    user: "${PUID:-1000}:${PGID:-1000}"
+
+    # Security hardening - minimal capabilities
+    cap_add:
+      # Uncomment additional capabilities only if needed:
+      - CHOWN # Required for file ownership changes (common in development)
+      # - DAC_OVERRIDE     # Override file access permissions
+      # - FOWNER           # File ownership operations
+      # - SETUID           # Change user ID (needed for some package installations)
+      # - SETGID           # Change group ID (needed for some package installations)
+      # - NET_BIND_SERVICE # Bind to privileged ports (<1024)
+      # - SYS_PTRACE       # Debug/trace processes (needed for debuggers like byebug)
+
+    cap_drop:
+      - ALL # Drop all capabilities, then add back only what's needed
+
+    security_opt:
+      - no-new-privileges:true # Prevent privilege escalation
+
+    # Container restart policy
+    restart: unless-stopped
+
+    # Resource limits to prevent runaway processes
+    deploy:
+      resources:
+        limits:
+          # Memory limit (default: 80% of 8GB = ~6.4GB for typical dev machines)
+          memory: ${MEMORY_LIMIT:-6400M}
+          # CPU limit (default: 80% of available CPUs)
+          cpus: ${CPU_LIMIT:-3.2}
+        reservations:
+          # Minimum guaranteed resources
+          memory: ${MEMORY_RESERVATION:-512M}
+          cpus: ${CPU_RESERVATION:-0.5}
+
+    # Health check to verify Ruby interpreter is working
+    healthcheck:
+      test:
+        ["CMD-SHELL", "ruby --version && ruby -e 'puts RUBY_VERSION' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

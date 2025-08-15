@@ -28,9 +28,22 @@ Secure, configurable Python development container:
 - **Security hardened**: Minimal privileges, resource limits, health checks
 - **Cross-platform**: Windows, Linux, macOS support
 
-**Features**: Auto-user creation, resource management, VS Code integration
+**Features**: Predictable user mapping, resource management, VS Code integration
 
 📖 **[Full Documentation](./python/README.md)**
+
+### 💎 [Ruby Development Environment](./ruby/)
+
+Secure, configurable Ruby development container:
+
+- **Multiple Ruby versions**: 2.7-3.3, slim, alpine variants
+- **Framework ready**: Rails, Sinatra, gem development
+- **Security hardened**: Minimal privileges, resource limits, health checks
+- **Cross-platform**: Windows, Linux, macOS support
+
+**Features**: Bundler integration, predictable user mapping, resource management
+
+📖 **[Full Documentation](./ruby/README.md)**
 
 ## 🛠️ Quick Start
 
@@ -40,6 +53,7 @@ Each stack is self-contained with its own documentation and configuration:
 # Choose your stack
 cd arr-stack/    # For media management
 cd python/       # For Python development
+cd ruby/         # For Ruby development
 
 # Follow the specific README in each directory
 cp .env.example .env
@@ -84,6 +98,10 @@ docker-compose/
 │   └── README.md             # Complete setup guide
 ├── python/                   # Python development environment
 │   ├── compose.yaml          # Python container config
+│   ├── .env.example          # Environment template
+│   └── README.md             # Complete setup guide
+├── ruby/                     # Ruby development environment
+│   ├── compose.yaml          # Ruby container config
 │   ├── .env.example          # Environment template
 │   └── README.md             # Complete setup guide
 ├── .vscode/                  # VS Code configuration
