@@ -1,0 +1,514 @@
+---
+version: '3.8'
+
+# Common path configurations - REQUIRED in your .env file
+# Copy .env.example to .env and set these variables
+x-common-variables: &common-variables
+  CONFIG_ROOT: &config-root ${CONFIG_ROOT}
+  MEDIA_ROOT: &media-root ${MEDIA_ROOT}
+  DOWNLOADS_ROOT: &downloads-root ${DOWNLOADS_ROOT}
+  TZ: &timezone ${TZ:-Europe/London}
+
+networks:
+  vpn-network:
+    driver: bridge
+    internal: false
+
+services:
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    command:
+      - --cleanup=true
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    user: "0:0"
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/v1/update || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: ${WATCHTOWER_MEMORY_LIMIT:-256M}
+          cpus: ${WATCHTOWER_CPU_LIMIT:-0.5}
+        reservations:
+          memory: 64M
+          cpus: 0.1
+    # Watchtower runs outside VPN network to maintain internet access during updates
+
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    cap_drop:
+      - ALL
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      # VPN services
+      - "8888:8888/tcp" # HTTP proxy
+      - "8388:8388/tcp" # Shadowsocks
+      - "8388:8388/udp" # Shadowsocks
+      # Media services exposed through VPN
+      - "8686:8686" # Lidarr
+      - "7878:7878" # Radarr
+      - "8989:8989" # Sonarr
+      - "9696:9696" # Prowlarr
+      - "6767:6767" # Bazarr
+      - "8191:8191" # Flaresolverr
+      - "5055:5055" # Overseerr
+      - "4545:4545" # Requestrr
+      - "8080:8080" # qBittorrent
+      - "8081:8081" # SABnzbd
+      - "5076:5076" # NZBHydra2
+    volumes:
+      - ${CONFIG_ROOT}/gluetun:/gluetun:rw
+    environment:
+      # See https://github.com/qdm12/gluetun-wiki/tree/main/setup#setup
+      # Configure for your VPN provider (examples: nordvpn, surfshark, expressvpn, protonvpn, pia, windscribe)
+      - VPN_SERVICE_PROVIDER=${VPN_PROVIDER:-nordvpn}
+      - VPN_TYPE=${VPN_TYPE:-openvpn}
+      # OpenVPN credentials (use environment variables for security)
+      - OPENVPN_USER=${VPN_USERNAME}
+      - OPENVPN_PASSWORD=${VPN_PASSWORD}
+      # Wireguard (alternative to OpenVPN - uncomment if using Wireguard)
+      # - WIREGUARD_PRIVATE_KEY=${VPN_PRIVATE_KEY}
+      # - WIREGUARD_ADDRESSES=${VPN_ADDRESSES}
+      # Timezone for accurate log times
+      - TZ=${TZ:-Europe/London}
+      # Server selection (leave empty for auto-selection)
+      - SERVER_REGIONS=${VPN_REGION:-}
+      - SERVER_COUNTRIES=${VPN_COUNTRY:-}
+      # Server list updater (24h = update daily)
+      - UPDATER_PERIOD=24h
+      # Health check URL
+      - HEALTH_VPN_DURATION_INITIAL=30s
+    networks:
+      - vpn-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    healthcheck:
+      test: ["CMD", "/gluetun-entrypoint", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: ${GLUETUN_MEMORY_LIMIT:-512M}
+          cpus: ${GLUETUN_CPU_LIMIT:-1.0}
+        reservations:
+          memory: 128M
+          cpus: 0.1
+
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/London}
+    volumes:
+      - ${CONFIG_ROOT}/lidarr:/config:rw
+      - ${MEDIA_ROOT}/music:/music:rw
+      - ${DOWNLOADS_ROOT}:/downloads:rw
+    # No direct port exposure - traffic routes through Gluetun
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    restart: unless-stopped
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8686/api/v1/system/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${LIDARR_MEMORY_LIMIT:-1G}
+          cpus: ${LIDARR_CPU_LIMIT:-1.0}
+        reservations:
+          memory: 256M
+          cpus: 0.2
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/London}
+    volumes:
+      - ${CONFIG_ROOT}/radarr:/config:rw
+      - ${MEDIA_ROOT}/movies:/movies:rw
+      - ${DOWNLOADS_ROOT}:/downloads:rw
+    # No direct port exposure - traffic routes through Gluetun
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    restart: unless-stopped
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7878/api/v3/system/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${RADARR_MEMORY_LIMIT:-1G}
+          cpus: ${RADARR_CPU_LIMIT:-1.0}
+        reservations:
+          memory: 256M
+          cpus: 0.2
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/London}
+    volumes:
+      - ${CONFIG_ROOT}/sonarr:/config:rw
+      - ${MEDIA_ROOT}/tv:/tv:rw
+      - ${DOWNLOADS_ROOT}:/downloads:rw
+    # No direct port exposure - traffic routes through Gluetun
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    restart: unless-stopped
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8989/api/v3/system/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${SONARR_MEMORY_LIMIT:-1G}
+          cpus: ${SONARR_CPU_LIMIT:-1.0}
+        reservations:
+          memory: 256M
+          cpus: 0.2
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/London}
+    volumes:
+      - ${CONFIG_ROOT}/prowlarr:/config:rw
+    # No direct port exposure - traffic routes through Gluetun
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    restart: unless-stopped
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9696/api/v1/system/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${PROWLARR_MEMORY_LIMIT:-512M}
+          cpus: ${PROWLARR_CPU_LIMIT:-0.5}
+        reservations:
+          memory: 128M
+          cpus: 0.1
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/London}
+    volumes:
+      - ${CONFIG_ROOT}/bazarr:/config:rw
+      - ${MEDIA_ROOT}/movies:/movies:rw
+      - ${MEDIA_ROOT}/tv:/tv:rw
+    # No direct port exposure - traffic routes through Gluetun
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    restart: unless-stopped
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6767/api/system/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${BAZARR_MEMORY_LIMIT:-512M}
+          cpus: ${BAZARR_CPU_LIMIT:-0.5}
+        reservations:
+          memory: 128M
+          cpus: 0.1
+
+  flaresolverr:
+    image: lscr.io/linuxserver/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=${TZ:-Europe/London}
+    # No direct port exposure - traffic routes through Gluetun
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8191/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${FLARESOLVERR_MEMORY_LIMIT:-1G}
+          cpus: ${FLARESOLVERR_CPU_LIMIT:-1.0}
+        reservations:
+          memory: 256M
+          cpus: 0.2
+
+  overseerr:
+    image: lscr.io/linuxserver/overseerr:latest
+    container_name: overseerr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/London}
+    volumes:
+      - ${CONFIG_ROOT}/overseerr:/config:rw
+    # No direct port exposure - traffic routes through Gluetun
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    restart: unless-stopped
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5055/api/v1/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${OVERSEERR_MEMORY_LIMIT:-1G}
+          cpus: ${OVERSEERR_CPU_LIMIT:-1.0}
+        reservations:
+          memory: 256M
+          cpus: 0.2
+
+  requestrr:
+    image: darkalfxlscr.io/linuxserver/requestrr:latest
+    container_name: requestrr
+    environment:
+      - TZ=${TZ:-Europe/London}
+    volumes:
+      - ${CONFIG_ROOT}/requestrr:/root/config:rw
+    # No direct port exposure - traffic routes through Gluetun
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4545/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${REQUESTRR_MEMORY_LIMIT:-512M}
+          cpus: ${REQUESTRR_CPU_LIMIT:-0.5}
+        reservations:
+          memory: 128M
+          cpus: 0.1
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/London}
+      - WEBUI_PORT=8080
+    volumes:
+      - ${CONFIG_ROOT}/qbittorrent:/config:rw
+      - ${DOWNLOADS_ROOT}:/downloads:rw
+    # No direct port exposure - traffic routes through Gluetun
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    restart: unless-stopped
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${QBITTORRENT_MEMORY_LIMIT:-2G}
+          cpus: ${QBITTORRENT_CPU_LIMIT:-2.0}
+        reservations:
+          memory: 512M
+          cpus: 0.3
+
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/London}
+    volumes:
+      - ${CONFIG_ROOT}/sabnzbd:/config:rw
+      - ${DOWNLOADS_ROOT}:/downloads:rw
+      - ${DOWNLOADS_ROOT}/incomplete:/incomplete-downloads:rw
+    # No direct port exposure - traffic routes through Gluetun
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    restart: unless-stopped
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/api?mode=version || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${SABNZBD_MEMORY_LIMIT:-2G}
+          cpus: ${SABNZBD_CPU_LIMIT:-2.0}
+        reservations:
+          memory: 512M
+          cpus: 0.3
+
+  nzbhydra2:
+    image: lscr.io/linuxserver/nzbhydra2:latest
+    container_name: nzbhydra2
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Europe/London}
+    volumes:
+      - ${CONFIG_ROOT}/nzbhydra2:/config:rw
+      - ${DOWNLOADS_ROOT}:/downloads:rw
+    # No direct port exposure - traffic routes through Gluetun
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    restart: unless-stopped
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5076/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${NZBHYDRA2_MEMORY_LIMIT:-1G}
+          cpus: ${NZBHYDRA2_CPU_LIMIT:-1.0}
+        reservations:
+          memory: 256M
+          cpus: 0.2
