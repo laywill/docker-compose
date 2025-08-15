@@ -16,8 +16,15 @@ cp .env.example .env
 **Minimum required configuration:**
 
 ```bash
-# The only required variable - no fallback provided
-WORKSPACE_PATH=/path/to/your/development/directory
+# The only required variable - current directory (.) used as fallback
+# Linux/macOS examples:
+WORKSPACE_PATH=/home/user/development
+# WORKSPACE_PATH=/Users/username/projects
+
+# Windows examples:
+# WORKSPACE_PATH=C:/Users/username/development
+# WORKSPACE_PATH=C:/dev/projects
+# WORKSPACE_PATH=D:/code
 ```
 
 **Optional configuration with defaults:**
@@ -26,7 +33,7 @@ WORKSPACE_PATH=/path/to/your/development/directory
 PYTHON_VERSION=3.11          # Python version (default: 3.11)
 CONTAINER_NAME=python-dev    # Container name (default: python-dev-container)
 PUID=1000                    # User ID (default: 1000)
-PGID=1000                    # Group ID (default: 1000)  
+PGID=1000                    # Group ID (default: 1000)
 TZ=UTC                       # Timezone (default: UTC)
 
 # Resource limits (prevents runaway processes)
@@ -36,10 +43,22 @@ CPU_LIMIT=3.2               # CPU limit (default: 3.2 cores)
 
 ### 2. Create Workspace Directory
 
+**Linux/macOS:**
+
 ```bash
 # Create and set permissions for your workspace
-mkdir -p /path/to/your/development
-sudo chown -R $USER:$USER /path/to/your/development
+mkdir -p /home/user/development
+sudo chown -R $USER:$USER /home/user/development
+```
+
+**Windows (PowerShell):**
+
+```powershell
+# Create workspace directory
+New-Item -ItemType Directory -Force -Path "C:\Users\$env:USERNAME\development"
+
+# Windows handles permissions automatically for user directories
+# Ensure Docker Desktop has access to the drive in Settings > Resources > File Sharing
 ```
 
 ## Dependencies
@@ -96,7 +115,7 @@ For seamless Git operations, uncomment the git volume mounts in `compose.yaml`:
 ```yaml
 # Uncomment these lines in compose.yaml:
 # - ${HOME}/.gitconfig:/home/python/.gitconfig:ro
-# - ${HOME}/.git-credentials:/home/python/.git-credentials:ro  
+# - ${HOME}/.git-credentials:/home/python/.git-credentials:ro
 # - ${HOME}/.ssh:/home/python/.ssh:ro
 ```
 
@@ -269,11 +288,48 @@ echo "MEMORY_LIMIT=$(($(grep MemTotal /proc/meminfo | awk '{print $2}') * 80 / 1
 
 # CPU (80% of total)
 echo "CPU_LIMIT=$(echo "$(nproc) * 0.8" | bc)"
+
+# Windows PowerShell equivalents:
+# Memory (80% of total)
+$totalMem = [math]::Round((Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property capacity -Sum).sum /1gb * 0.8, 1)
+Write-Host "MEMORY_LIMIT=${totalMem}G"
+
+# CPU (80% of total)
+$totalCPU = [math]::Round($env:NUMBER_OF_PROCESSORS * 0.8, 1)
+Write-Host "CPU_LIMIT=$totalCPU"
+```
+
+### Windows-Specific Issues
+
+**Volume Mount Problems:**
+
+```powershell
+# Ensure Docker Desktop has drive access
+# Settings > Resources > File Sharing > Add your drive (C:, D:, etc.)
+
+# Check if path exists and is accessible
+Test-Path "C:\Users\$env:USERNAME\development"
+
+# Use forward slashes in .env file (Docker prefers this)
+# WORKSPACE_PATH=C:/Users/username/development  # Good
+# WORKSPACE_PATH=C:\Users\username\development  # May cause issues
+```
+
+**Permission Issues on Windows:**
+
+```powershell
+# Check current user has access
+Get-Acl "C:\Users\$env:USERNAME\development" | Format-List
+
+# If using WSL2, ensure path is accessible from WSL
+wsl ls -la /mnt/c/Users/$USER/development
 ```
 
 ## Example Projects
 
 ### Data Analysis Setup
+
+**Linux/macOS:**
 
 ```bash
 # .env configuration
@@ -285,12 +341,41 @@ docker compose run --rm python-dev
 pip install pandas numpy matplotlib jupyter seaborn
 ```
 
-### Web Development Setup  
+**Windows:**
+
+```powershell
+# .env configuration
+# WORKSPACE_PATH=C:/Users/username/data-analysis
+# PYTHON_VERSION=3.11
+
+# Start container and install data stack
+docker compose run --rm python-dev
+pip install pandas numpy matplotlib jupyter seaborn
+```
+
+### Web Development Setup
+
+**Linux/macOS:**
 
 ```bash
 # .env configuration
 WORKSPACE_PATH=/home/user/web-projects
 PYTHON_VERSION=3.12
+
+# Enable port binding capability in compose.yaml
+# Uncomment: NET_BIND_SERVICE
+
+# Start container and install web framework
+docker compose run --rm python-dev
+pip install flask fastapi uvicorn
+```
+
+**Windows:**
+
+```powershell
+# .env configuration
+# WORKSPACE_PATH=C:/Users/username/web-projects
+# PYTHON_VERSION=3.12
 
 # Enable port binding capability in compose.yaml
 # Uncomment: NET_BIND_SERVICE

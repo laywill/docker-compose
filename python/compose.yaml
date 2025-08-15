@@ -1,68 +1,67 @@
 ---
-version: '3.8'
-
 # Common configuration variables - customize in your .env file
+# WORKSPACE_PATH is REQUIRED - create .env file to set it
 x-common-variables: &common-variables
   PYTHON_VERSION: &python-version ${PYTHON_VERSION:-3.11}
-  WORKSPACE_PATH: &workspace-path ${WORKSPACE_PATH}
+  WORKSPACE_PATH: &workspace-path ${WORKSPACE_PATH:-.}
   TZ: &timezone ${TZ:-UTC}
 
 services:
   python-dev:
     container_name: ${CONTAINER_NAME:-python-dev-container}
-    
+
     # Use the official Python image from Docker Hub
     # Version configurable via PYTHON_VERSION environment variable
     image: python:${PYTHON_VERSION:-3.11}
-    
+
     # Mount workspace and optional git/ssh configuration
     volumes:
-      # Primary workspace directory
-      - ${WORKSPACE_PATH}:/workspace:rw
-      
+      # Primary workspace directory (REQUIRED: set WORKSPACE_PATH in .env file)
+      - ${WORKSPACE_PATH:-.}:/workspace:rw
+
       # Optional Git configuration (uncomment if needed)
       # - ${HOME}/.gitconfig:/home/python/.gitconfig:ro
       # - ${HOME}/.git-credentials:/home/python/.git-credentials:ro
-      
+
       # Optional SSH keys for Git operations (uncomment if needed)
       # - ${HOME}/.ssh:/home/python/.ssh:ro
-    
+
     working_dir: /workspace
-    
+
     # Interactive shell as the main process
     command: /bin/bash
     stdin_open: true
     tty: true
-    
+
     # Environment variables
     environment:
       - TZ=${TZ:-UTC}
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
-    
+
     # Use a non-root user with configurable UID and GID
     user: "${PUID:-1000}:${PGID:-1000}"
-    
+
     # Security hardening - minimal capabilities
     cap_add:
       # Uncomment additional capabilities only if needed:
-      - CHOWN            # Required for file ownership changes (common in development)
+      - CHOWN # Required for file ownership changes (common in development)
       # - DAC_OVERRIDE     # Override file access permissions
-      # - FOWNER           # File ownership operations  
+      # - FOWNER           # File ownership operations
       # - SETUID           # Change user ID (needed for some package installations)
       # - SETGID           # Change group ID (needed for some package installations)
       # - NET_BIND_SERVICE # Bind to privileged ports (<1024)
       # - SYS_PTRACE       # Debug/trace processes (needed for debuggers like pdb)
-    
+
     cap_drop:
-      - ALL            # Drop all capabilities, then add back only what's needed
-    
+      - ALL # Drop all capabilities, then add back only what's needed
+
     security_opt:
-      - no-new-privileges:true  # Prevent privilege escalation
-    
+      - no-new-privileges:true # Prevent privilege escalation
+
     # Container restart policy
     restart: unless-stopped
-    
+
     # Resource limits to prevent runaway processes
     deploy:
       resources:
@@ -75,10 +74,14 @@ services:
           # Minimum guaranteed resources
           memory: ${MEMORY_RESERVATION:-512M}
           cpus: ${CPU_RESERVATION:-0.5}
-    
+
     # Health check to verify Python interpreter is working
     healthcheck:
-      test: ["CMD-SHELL", "python --version && python -c 'import sys; print(sys.version)' || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "python --version && python -c 'import sys; print(sys.version)' || exit 1",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
