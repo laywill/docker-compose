@@ -15,7 +15,7 @@ Complete media management and download stack with VPN protection:
 - **Supporting Services**: Bazarr, Flaresolverr, Overseerr, Requestrr
 - **Infrastructure**: Gluetun VPN, Watchtower auto-updater
 
-**Features**: VPN-protected traffic, resource limits, health monitoring, security hardening
+**Features**: VPN-protected traffic, reverse proxy dashboard, resource limits, health monitoring, security hardening
 
 📖 **[Full Documentation](./arr-stack/README.md)**
 
