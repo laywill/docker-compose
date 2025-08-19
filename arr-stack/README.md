@@ -122,37 +122,40 @@ All media services and downloaders (Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Fl
 All services are accessible through their direct ports. Click any link below to access the service:
 
 ### 📺 Media Management
+
 - **[Sonarr - TV Show Management](http://localhost:8989)** - Port 8989
 - **[Radarr - Movie Management](http://localhost:7878)** - Port 7878
 - **[Lidarr - Music Management](http://localhost:8686)** - Port 8686
 - **[Prowlarr - Indexer Management](http://localhost:9696)** - Port 9696
 
 ### 🔧 Supporting Services
+
 - **[Bazarr - Subtitle Management](http://localhost:6767)** - Port 6767
 - **[Overseerr - Request Management](http://localhost:5055)** - Port 5055
 - **[Requestrr - Discord Bot Interface](http://localhost:4545)** - Port 4545
 - **[Flaresolverr - CloudFlare Bypass](http://localhost:8191)** - Port 8191
 
 ### ⬇️ Download Clients
+
 - **[qBittorrent - Torrent Client](http://localhost:8080)** - Port 8080
-- **[SABnzbd - Usenet Client](http://localhost:8081)** - Port 8081
+- **[SABnzbd - Usenet Client](http://localhost:8081)** - Port 8085
 - **[NZBHydra2 - NZB Meta Search](http://localhost:5076)** - Port 5076
 
 ### 📋 Quick Reference
 
 | Service | URL | Port | Purpose |
 |---------|-----|------|---------|
-| Sonarr | http://localhost:8989 | 8989 | TV Show Management |
-| Radarr | http://localhost:7878 | 7878 | Movie Management |
-| Lidarr | http://localhost:8686 | 8686 | Music Management |
-| Prowlarr | http://localhost:9696 | 9696 | Indexer Management |
-| Bazarr | http://localhost:6767 | 6767 | Subtitle Management |
-| Overseerr | http://localhost:5055 | 5055 | Request Management |
-| Requestrr | http://localhost:4545 | 4545 | Discord Bot Interface |
-| Flaresolverr | http://localhost:8191 | 8191 | CloudFlare Bypass |
-| qBittorrent | http://localhost:8080 | 8080 | Torrent Client |
-| SABnzbd | http://localhost:8081 | 8081 | Usenet Client |
-| NZBHydra2 | http://localhost:5076 | 5076 | NZB Meta Search |
+| Sonarr | <http://localhost:8989> | 8989 | TV Show Management |
+| Radarr | <http://localhost:7878> | 7878 | Movie Management |
+| Lidarr | <http://localhost:8686> | 8686 | Music Management |
+| Prowlarr | <http://localhost:9696> | 9696 | Indexer Management |
+| Bazarr | <http://localhost:6767> | 6767 | Subtitle Management |
+| Overseerr | <http://localhost:5055> | 5055 | Request Management |
+| Requestrr | <http://localhost:4545> | 4545 | Discord Bot Interface |
+| Flaresolverr | <http://localhost:8191> | 8191 | CloudFlare Bypass |
+| qBittorrent | <http://localhost:8080> | 8080 | Torrent Client |
+| SABnzbd | <http://localhost:8081> | 8081 | Usenet Client |
+| NZBHydra2 | <http://localhost:5076> | 5076 | NZB Meta Search |
 
 ## Deployment
 
@@ -276,12 +279,14 @@ QBITTORRENT_MEMORY_LIMIT=1G
 **This setup ensures all external traffic goes through the VPN while maintaining local access:**
 
 ### How It Works
+
 - **All arr services** share Gluetun's network stack via `network_mode: "service:gluetun"`
 - **External traffic** (indexers, trackers, downloads) routes through the VPN tunnel
 - **Local dashboard access** enters Gluetun container via port forwarding but is handled locally (not routed through VPN tunnel)
 - **Inter-service communication** happens within Gluetun's shared network stack without VPN overhead
 
 ### Verification
+
 You can verify VPN routing is working correctly:
 
 ```bash
@@ -299,6 +304,7 @@ docker unpause gluetun
 ```
 
 **Expected behavior when Gluetun is paused:**
+
 - ✅ Local dashboards remain accessible (`localhost:port`)
 - ❌ Services cannot reach external indexers/trackers
 - ❌ Downloads fail (no internet access)

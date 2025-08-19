@@ -26,22 +26,17 @@ services:
       - ALL
     cap_add:
       - CHOWN # Required for config file management
-      - SETUID
-      - SETGID
+      - SETGID # Required for s6-overlay user switching
+      - SETUID # Required for s6-overlay user switching
       - DAC_OVERRIDE
     security_opt:
       - no-new-privileges:true
-    # healthcheck temporarily disabled:
-    # healthcheck:
-    #   test:
-    #     [
-    #       "CMD-SHELL",
-    #       "wget --no-verbose --tries=1 --spider http://localhost:8080/v1/update || exit 1",
-    #     ]
-    #   interval: 60s
-    #   timeout: 10s
-    #   retries: 3
-    #   start_period: 30s
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep watchtower || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     deploy:
       resources:
         limits:
@@ -51,7 +46,6 @@ services:
           memory: 64M
           cpus: 0.1
     # Watchtower runs outside VPN network to maintain internet access during updates
-
 
   gluetun:
     image: qmcgaw/gluetun
@@ -82,7 +76,7 @@ services:
       - "5055:5055" # Overseerr
       - "4545:4545" # Requestrr
       - "8080:8080" # qBittorrent
-      - "8081:8081" # SABnzbd
+      - "8085:8085" # SABnzbd
       - "5076:5076" # NZBHydra2
     volumes:
       - ${CONFIG_ROOT}/gluetun:/gluetun:rw
@@ -124,8 +118,10 @@ services:
     # Health check to ensure VPN is up is handled by Gluetun
     # Do NOT override the healthcheck test as it is essential for Gluetun's operation
     healthcheck:
-      retries: 3
-      start_period: 60s
+      interval: 30s
+      timeout: 15s
+      retries: 4
+      start_period: 120s
     networks:
       - vpn-network
     restart: unless-stopped
@@ -145,6 +141,8 @@ services:
   lidarr:
     image: lscr.io/linuxserver/lidarr:latest
     container_name: lidarr
+    # NOTE: LinuxServer containers MUST start as root to initialize s6-overlay,
+    # then switch to PUID/PGID user internally. Do NOT set user: directive.
     environment:
       - PUID=1000
       - PGID=1000
@@ -159,25 +157,20 @@ services:
       gluetun:
         condition: service_healthy
     restart: unless-stopped
-    # Temporarily simplified security for debugging
-    # user: "1000:1000"
-    # cap_add:
-    #   - CHOWN # Required for config file management
-    # cap_drop:
-    #   - ALL
-    # security_opt:
-    #   - no-new-privileges:true
-    # healthcheck temporarily disabled:
-    # healthcheck:
-    #   test:
-    # [
-    #   "CMD-SHELL",
-    #   "curl -f http://localhost:8686/api/v1/system/status || exit 1",
-    # ]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    # start_period: 60s
+    cap_add:
+      - CHOWN # Required for config file management
+      - SETGID # Required for s6-overlay user switching
+      - SETUID # Required for s6-overlay user switching
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8686/ || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 4
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -190,6 +183,8 @@ services:
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
+    # NOTE: LinuxServer containers MUST start as root to initialize s6-overlay,
+    # then switch to PUID/PGID user internally. Do NOT set user: directive.
     environment:
       - PUID=1000
       - PGID=1000
@@ -204,25 +199,20 @@ services:
       gluetun:
         condition: service_healthy
     restart: unless-stopped
-    # Temporarily simplified security for debugging
-    # user: "1000:1000"
-    # cap_add:
-    #   - CHOWN # Required for config file management
-    # cap_drop:
-    #   - ALL
-    # security_opt:
-    #   - no-new-privileges:true
-    # healthcheck temporarily disabled:
-    # healthcheck:
-    #   test:
-    # [
-    #   "CMD-SHELL",
-    #   "curl -f http://localhost:7878/api/v3/system/status || exit 1",
-    # ]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    # start_period: 60s
+    cap_add:
+      - CHOWN # Required for config file management
+      - SETGID # Required for s6-overlay user switching
+      - SETUID # Required for s6-overlay user switching
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7878/ || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 4
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -235,6 +225,8 @@ services:
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
+    # NOTE: LinuxServer containers MUST start as root to initialize s6-overlay,
+    # then switch to PUID/PGID user internally. Do NOT set user: directive.
     environment:
       - PUID=1000
       - PGID=1000
@@ -249,25 +241,20 @@ services:
       gluetun:
         condition: service_healthy
     restart: unless-stopped
-    # Temporarily simplified security for debugging
-    # user: "1000:1000"
-    # cap_add:
-    #   - CHOWN # Required for config file management
-    # cap_drop:
-    #   - ALL
-    # security_opt:
-    #   - no-new-privileges:true
-    # healthcheck temporarily disabled:
-    # healthcheck:
-    #   test:
-    # [
-    #   "CMD-SHELL",
-    #   "curl -f http://localhost:8989/api/v3/system/status || exit 1",
-    # ]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    # start_period: 60s
+    cap_add:
+      - CHOWN # Required for config file management
+      - SETGID # Required for s6-overlay user switching
+      - SETUID # Required for s6-overlay user switching
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8989/ || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 4
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -280,6 +267,8 @@ services:
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
+    # NOTE: LinuxServer containers MUST start as root to initialize s6-overlay,
+    # then switch to PUID/PGID user internally. Do NOT set user: directive.
     environment:
       - PUID=1000
       - PGID=1000
@@ -291,26 +280,23 @@ services:
     depends_on:
       gluetun:
         condition: service_healthy
+      flaresolverr:
+        condition: service_healthy
     restart: unless-stopped
-    # Temporarily simplified security for debugging
-    # user: "1000:1000"
-    # cap_add:
-    #   - CHOWN # Required for config file management
-    # cap_drop:
-    #   - ALL
-    # security_opt:
-    #   - no-new-privileges:true
-    # healthcheck temporarily disabled:
-    # healthcheck:
-    #   test:
-    # [
-    #   "CMD-SHELL",
-    #   "curl -f http://localhost:9696/api/v1/system/status || exit 1",
-    # ]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    # start_period: 60s
+    cap_add:
+      - CHOWN # Required for config file management
+      - SETGID # Required for s6-overlay user switching
+      - SETUID # Required for s6-overlay user switching
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9696/ || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 4
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -323,6 +309,8 @@ services:
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
+    # NOTE: LinuxServer containers MUST start as root to initialize s6-overlay,
+    # then switch to PUID/PGID user internally. Do NOT set user: directive.
     environment:
       - PUID=1000
       - PGID=1000
@@ -337,25 +325,20 @@ services:
       gluetun:
         condition: service_healthy
     restart: unless-stopped
-    # Temporarily simplified security for debugging
-    # user: "1000:1000"
-    # cap_add:
-    #   - CHOWN # Required for config file management
-    # cap_drop:
-    #   - ALL
-    # security_opt:
-    #   - no-new-privileges:true
-    # healthcheck temporarily disabled:
-    # healthcheck:
-    #   test:
-    # [
-    #   "CMD-SHELL",
-    #   "curl -f http://localhost:6767/api/system/status || exit 1",
-    # ]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    # start_period: 60s
+    cap_add:
+      - CHOWN # Required for config file management
+      - SETGID # Required for s6-overlay user switching
+      - SETUID # Required for s6-overlay user switching
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6767/ || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 4
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -379,20 +362,20 @@ services:
       gluetun:
         condition: service_healthy
     restart: unless-stopped
-    # Temporarily simplified security for debugging
-    # cap_add:
-    #   - CHOWN # Required for config file management
-    # cap_drop:
-    #   - ALL
-    # security_opt:
-    #   - no-new-privileges:true
-    # healthcheck temporarily disabled:
-    # healthcheck:
-    #   test: ["CMD-SHELL", "curl -f http://localhost:8191/ || exit 1"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    # start_period: 60s
+    cap_add:
+      - CHOWN # Required for config file management
+      - SETGID # Required for s6-overlay user switching
+      - SETUID # Required for s6-overlay user switching
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8191/ || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 4
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -405,6 +388,8 @@ services:
   overseerr:
     image: lscr.io/linuxserver/overseerr:latest
     container_name: overseerr
+    # NOTE: LinuxServer containers MUST start as root to initialize s6-overlay,
+    # then switch to PUID/PGID user internally. Do NOT set user: directive.
     environment:
       - PUID=1000
       - PGID=1000
@@ -417,22 +402,20 @@ services:
       gluetun:
         condition: service_healthy
     restart: unless-stopped
-    # Temporarily simplified security for debugging
-    # user: "1000:1000"
-    # cap_add:
-    #   - CHOWN # Required for config file management
-    # cap_drop:
-    #   - ALL
-    # security_opt:
-    #   - no-new-privileges:true
-    # healthcheck temporarily disabled:
-    # healthcheck:
-    #   test:
-    # ["CMD-SHELL", "curl -f http://localhost:5055/api/v1/status || exit 1"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    # start_period: 60s
+    cap_add:
+      - CHOWN # Required for config file management
+      - SETGID # Required for s6-overlay user switching
+      - SETUID # Required for s6-overlay user switching
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5055/ || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 4
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -445,6 +428,8 @@ services:
   requestrr:
     image: lscr.io/linuxserver/requestrr:latest
     container_name: requestrr
+    # NOTE: LinuxServer containers MUST start as root to initialize s6-overlay,
+    # then switch to PUID/PGID user internally. Do NOT set user: directive.
     environment:
       - TZ=${TZ:-Europe/London}
     volumes:
@@ -455,20 +440,20 @@ services:
       gluetun:
         condition: service_healthy
     restart: unless-stopped
-    # Temporarily simplified security for debugging
-    # cap_add:
-    #   - CHOWN # Required for config file management
-    # cap_drop:
-    #   - ALL
-    # security_opt:
-    #   - no-new-privileges:true
-    # healthcheck temporarily disabled:
-    # healthcheck:
-    #   test: ["CMD-SHELL", "curl -f http://localhost:4545/ || exit 1"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    # start_period: 60s
+    cap_add:
+      - CHOWN # Required for config file management
+      - SETGID # Required for s6-overlay user switching
+      - SETUID # Required for s6-overlay user switching
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4545/ || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 4
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -481,6 +466,8 @@ services:
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
+    # NOTE: LinuxServer containers MUST start as root to initialize s6-overlay,
+    # then switch to PUID/PGID user internally. Do NOT set user: directive.
     environment:
       - PUID=1000
       - PGID=1000
@@ -495,21 +482,20 @@ services:
       gluetun:
         condition: service_healthy
     restart: unless-stopped
-    # Temporarily simplified security for debugging
-    # user: "1000:1000"
-    # cap_add:
-    #   - CHOWN # Required for config file management
-    # cap_drop:
-    #   - ALL
-    # security_opt:
-    #   - no-new-privileges:true
-    # healthcheck temporarily disabled:
-    # healthcheck:
-    #   test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    # start_period: 60s
+    cap_add:
+      - CHOWN # Required for config file management
+      - SETGID # Required for s6-overlay user switching
+      - SETUID # Required for s6-overlay user switching
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 4
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -522,6 +508,8 @@ services:
   sabnzbd:
     image: lscr.io/linuxserver/sabnzbd:latest
     container_name: sabnzbd
+    # NOTE: LinuxServer containers MUST start as root to initialize s6-overlay,
+    # then switch to PUID/PGID user internally. Do NOT set user: directive.
     environment:
       - PUID=1000
       - PGID=1000
@@ -536,25 +524,20 @@ services:
       gluetun:
         condition: service_healthy
     restart: unless-stopped
-    # Temporarily simplified security for debugging
-    # user: "1000:1000"
-    # cap_add:
-    #   - CHOWN # Required for config file management
-    # cap_drop:
-    #   - ALL
-    # security_opt:
-    #   - no-new-privileges:true
-    # healthcheck temporarily disabled:
-    # healthcheck:
-    #   test:
-    # [
-    #   "CMD-SHELL",
-    #   "curl -f http://localhost:8081/api?mode=version || exit 1",
-    # ]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    # start_period: 60s
+    cap_add:
+      - CHOWN # Required for config file management
+      - SETGID # Required for s6-overlay user switching
+      - SETUID # Required for s6-overlay user switching
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/ || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 4
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -567,6 +550,8 @@ services:
   nzbhydra2:
     image: lscr.io/linuxserver/nzbhydra2:latest
     container_name: nzbhydra2
+    # NOTE: LinuxServer containers MUST start as root to initialize s6-overlay,
+    # then switch to PUID/PGID user internally. Do NOT set user: directive.
     environment:
       - PUID=1000
       - PGID=1000
@@ -580,22 +565,20 @@ services:
       gluetun:
         condition: service_healthy
     restart: unless-stopped
-    # Temporarily simplified security for debugging
-    # user: "1000:1000"
-    # cap_add:
-    #   - CHOWN # Required for config file management
-    # cap_drop:
-    #   - ALL
-    # security_opt:
-    #   - no-new-privileges:true
-    # healthcheck temporarily disabled:
-    # healthcheck:
-    #   test:
-    # ["CMD-SHELL", "curl -f http://localhost:5076/actuator/health || exit 1"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    # start_period: 60s
+    cap_add:
+      - CHOWN # Required for config file management
+      - SETGID # Required for s6-overlay user switching
+      - SETUID # Required for s6-overlay user switching
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5076/ || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 4
+      start_period: 120s
     deploy:
       resources:
         limits:
