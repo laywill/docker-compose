@@ -1,6 +1,6 @@
 # Arr Stack with VPN
 
-A complete media management and download stack including Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Flaresolverr, Overseerr, Requestrr, qBittorrent, SABnzbd, and NZBHydra2 with VPN protection via Gluetun and automatic updates via Watchtower.
+A complete media management and download stack including Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Flaresolverr, Overseerr, Requestrr, qBittorrent, SABnzbd, and NZBHydra2 with VPN protection via Gluetun, reverse proxy via Nginx for easy access, and automatic updates via Watchtower.
 
 **⚠️ Important**: This Docker Compose configuration brings the entire stack online with secure defaults. Each service requires individual configuration through their web interfaces to function properly.
 
@@ -117,21 +117,45 @@ All media services and downloaders (Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Fl
 - **Media Services**: Use `network_mode: "service:gluetun"` for VPN routing
 - **Watchtower**: Runs on separate network to maintain update capability
 
-## Accessing Services
+## 🌐 Service Access
 
-All services are accessible through Gluetun's IP on these ports:
+All services are accessible through their direct ports. Click any link below to access the service:
 
-- **Lidarr** (Music): <http://localhost:8686>
-- **Radarr** (Movies): <http://localhost:7878>
-- **Sonarr** (TV Shows): <http://localhost:8989>
-- **Prowlarr** (Indexers): <http://localhost:9696>
-- **Bazarr** (Subtitles): <http://localhost:6767>
-- **Flaresolverr** (CloudFlare Bypass): <http://localhost:8191>
-- **Overseerr** (Requests): <http://localhost:5055>
-- **Requestrr** (Discord Bot): <http://localhost:4545>
-- **qBittorrent** (Torrent): <http://localhost:8080>
-- **SABnzbd** (Usenet): <http://localhost:8081>
-- **NZBHydra2** (NZB Meta Search): <http://localhost:5076>
+### 📺 Media Management
+
+- **[Sonarr - TV Show Management](http://localhost:8989)** - Port 8989
+- **[Radarr - Movie Management](http://localhost:7878)** - Port 7878
+- **[Lidarr - Music Management](http://localhost:8686)** - Port 8686
+- **[Prowlarr - Indexer Management](http://localhost:9696)** - Port 9696
+
+### 🔧 Supporting Services
+
+- **[Bazarr - Subtitle Management](http://localhost:6767)** - Port 6767
+- **[Overseerr - Request Management](http://localhost:5055)** - Port 5055
+- **[Requestrr - Discord Bot Interface](http://localhost:4545)** - Port 4545
+- **[Flaresolverr - CloudFlare Bypass](http://localhost:8191)** - Port 8191
+
+### ⬇️ Download Clients
+
+- **[qBittorrent - Torrent Client](http://localhost:8080)** - Port 8080
+- **[SABnzbd - Usenet Client](http://localhost:8081)** - Port 8085
+- **[NZBHydra2 - NZB Meta Search](http://localhost:5076)** - Port 5076
+
+### 📋 Quick Reference
+
+| Service | URL | Port | Purpose |
+|---------|-----|------|---------|
+| Sonarr | <http://localhost:8989> | 8989 | TV Show Management |
+| Radarr | <http://localhost:7878> | 7878 | Movie Management |
+| Lidarr | <http://localhost:8686> | 8686 | Music Management |
+| Prowlarr | <http://localhost:9696> | 9696 | Indexer Management |
+| Bazarr | <http://localhost:6767> | 6767 | Subtitle Management |
+| Overseerr | <http://localhost:5055> | 5055 | Request Management |
+| Requestrr | <http://localhost:4545> | 4545 | Discord Bot Interface |
+| Flaresolverr | <http://localhost:8191> | 8191 | CloudFlare Bypass |
+| qBittorrent | <http://localhost:8080> | 8080 | Torrent Client |
+| SABnzbd | <http://localhost:8081> | 8081 | Usenet Client |
+| NZBHydra2 | <http://localhost:5076> | 5076 | NZB Meta Search |
 
 ## Deployment
 
@@ -235,6 +259,11 @@ QBITTORRENT_MEMORY_LIMIT=1G
 - **SABnzbd**: Usenet binary downloader
 - **NZBHydra2**: NZB meta search for Usenet indexers
 
+### Infrastructure Services
+
+- **Gluetun**: VPN client providing secure internet access for all media services
+- **Watchtower**: Automatic container updates
+
 ### Configuration Notes
 
 - **Flaresolverr**: No persistent storage needed, runs entirely in memory
@@ -244,6 +273,43 @@ QBITTORRENT_MEMORY_LIMIT=1G
 - **qBittorrent**: Default login is `admin/adminadmin` - change immediately after first login
 - **SABnzbd**: Configure port 8081 in settings if it defaults to 8080 to avoid conflicts
 - **NZBHydra2**: Acts as proxy/aggregator for multiple NZB indexers
+
+## 🔐 VPN Traffic Routing Explained
+
+**This setup ensures all external traffic goes through the VPN while maintaining local access:**
+
+### How It Works
+
+- **All arr services** share Gluetun's network stack via `network_mode: "service:gluetun"`
+- **External traffic** (indexers, trackers, downloads) routes through the VPN tunnel
+- **Local dashboard access** enters Gluetun container via port forwarding but is handled locally (not routed through VPN tunnel)
+- **Inter-service communication** happens within Gluetun's shared network stack without VPN overhead
+
+### Verification
+
+You can verify VPN routing is working correctly:
+
+```bash
+# 1. Access all services normally at localhost:port
+curl -I http://localhost:8989  # Should work (local access)
+
+# 2. Pause Gluetun to test VPN dependency
+docker pause gluetun
+
+# 3. Services should lose internet access but local dashboards remain accessible
+curl -I http://localhost:8989  # Should still work (local dashboard)
+
+# 4. Resume Gluetun
+docker unpause gluetun
+```
+
+**Expected behavior when Gluetun is paused:**
+
+- ✅ Local dashboards remain accessible (`localhost:port`)
+- ❌ Services cannot reach external indexers/trackers
+- ❌ Downloads fail (no internet access)
+
+This confirms traffic is properly routed through the VPN with no leakage.
 
 ## Post-Deployment Configuration Required
 
@@ -255,5 +321,16 @@ QBITTORRENT_MEMORY_LIMIT=1G
 4. **Connect services** (Overseerr to Radarr/Sonarr, Bazarr to media libraries)
 5. **Set up VPN credentials** in environment variables
 6. **Update all file paths** to match your system
+
+### 🔗 Inter-Service Communication
+
+**Important**: When configuring services to communicate with each other, use `localhost:port` addresses:
+
+- **Sonarr → qBittorrent**: `http://localhost:8080`
+- **Radarr → SABnzbd**: `http://localhost:8081`
+- **Prowlarr → All arr apps**: `http://localhost:8989`, `http://localhost:7878`, etc.
+- **Overseerr → Sonarr/Radarr**: `http://localhost:8989`, `http://localhost:7878`
+
+**Why localhost works**: All services share the same network stack through Gluetun, so they can reach each other on localhost without exposing traffic externally or routing through the VPN unnecessarily.
 
 Refer to each service's documentation for detailed configuration instructions.

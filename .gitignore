@@ -5,6 +5,14 @@
 CLAUDE.md
 .claude/
 
+### Docker Compose ###
+# Ignore all .env files (they contain sensitive credentials)
+.env
+
+# Keep example files for reference
+!.env.example
+!**/.env.example
+
 ### Git ###
 # Created by git for backups. To disable backups in Git:
 # $ git config --global mergetool.keepBackup false

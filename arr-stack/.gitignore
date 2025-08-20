@@ -1,0 +1,10 @@
+
+### Arr Stack ###
+
+docker/
+
+# Config files required for nginx to correctly proxy
+!/docker/configs/radarr/config.xml
+!/docker/configs/sonarr/config.xml
+!/docker/configs/lidarr/config.xml
+!/docker/configs/prowlarr/config.xml
